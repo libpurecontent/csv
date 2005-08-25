@@ -138,12 +138,14 @@ class csv
 	
 	
 	# Function to convert a multi-dimensional keyed array back to a CSV
-	function dataToCsv ($data, $headers, $delimiter = ',')
+	function dataToCsv ($data, $headers = '', $delimiter = ',')
 	{
 		# Convert the array into an array of data strings, one array item per row
 		$csv = array ();
 		#!# Hacky workaround if the data is empty
-		$headers = implode ($delimiter, $headers) . "\n";
+		if ($headers) {
+			$headers = implode ($delimiter, $headers) . "\n";
+		}
 		foreach ($data as $key => $values) {
 			list ($headers, $csv[]) = csv::arrayToCsv ($values);
 		}
