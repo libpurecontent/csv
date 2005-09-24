@@ -31,7 +31,7 @@ class csv
 		# Loop through each line of data
 		$data = array ();
 		$counter = 0;
-		while ($csvData = fgetcsv ($fileHandle, filesize ($filename))) {
+		while ($csvData = fgetcsv ($fileHandle, filesize ($filename) + 1)) {
 			
 			# Skip if in the first (header) row
 			if (!$counter++) {continue;}
@@ -61,10 +61,11 @@ class csv
 	function getHeaders ($filename)
 	{
 		# Open the file
-		if (!$fileHandle = fopen ($filename, 'rb')) {return false;}
+		if (!is_readable ($filename)) {return false;}
+		$fileHandle = fopen ($filename, 'rb');
 		
 		# Get the column names
-		$headers = fgetcsv ($fileHandle, filesize ($filename));
+		$headers = fgetcsv ($fileHandle, filesize ($filename) + 1);
 		
 		# Close the file
 		fclose ($fileHandle);
