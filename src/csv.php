@@ -1,5 +1,7 @@
 <?php
 
+# Version 1.0.0
+
 # Load required libraries
 require_once ('application.php');
 
@@ -117,6 +119,32 @@ class csv
 	}
 	
 	
+	# Function to convert CSV string to an array - from www.php.net/manual/en/function.fgetcsv.php#50186
+	function csvtoArray ($content, $delimiter = ',', $enclosure = '"', $optional = 1)
+	{
+		# Define a regexp
+		$regexp = '/(('.$enclosure.')'.($optional?'?(?(2)':'(').'[^'.$enclosure.']*'.$enclosure.'|[^'.$delimiter.'\r\n]*))('.$delimiter.'|\r\n)/smi';
+		
+		# Perform the matches
+		preg_match_all ($regexp, $content, $matches);
+		
+		# Assemble the data
+		application::dumpData ($matches);
+		$data = array ();
+		$linecount = 0;
+		for ($i = 0; $i <= count ($matches[3]); $i++) {
+			$data[$linecount][] = $matches[1][$i];
+			if ($matches[3][$i] != $delimiter) {
+				$linecount++;
+			}
+		}
+		
+		# Return the array
+		return $data;
+	}
+	
+	
+	
 	# Called function to make a data cell CSV-safe
 	function safeDataCell ($data, $delimiter = ',')
 	{
@@ -174,7 +202,7 @@ class csv
 		# Order and validate (discard unwanted keys) the new data
 		foreach ($newItem as $key => $attributes) {
 			foreach ($headers as $header) {
-				$data[$key][$header] = $attributes[$header];
+				$data[$key][$header] = (isSet ($attributes[$header]) ? $attributes[$header] : '');
 			}
 		}
 		
