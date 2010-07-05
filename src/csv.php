@@ -1,6 +1,6 @@
 <?php
 
-# Version 1.0.0
+# Version 1.0.1
 
 # Load required libraries
 require_once ('application.php');
@@ -21,6 +21,7 @@ class csv
 	
 	# Wrapper function to get CSV data
 	#!# Consider further file error handling
+	#!# Need to merge this with application::getCsvData
 	function getData ($filename, $stripKey = true)
 	{
 		# Get the headers
@@ -43,6 +44,7 @@ class csv
 				if ($stripKey) {unset ($csvData[0]);}
 				
 				# Loop through each item of data
+				#!# What should happen if a row has fewer columns than another? If there are fields missing, then it may be better to allow offsets to be generated as otherwise the data error may not be known. Filling in the remaining fields is probably wrong as we don't know which are missing.
 				foreach ($csvData as $key => $value) {
 					
 					# Assign the entry into the table
@@ -129,7 +131,7 @@ class csv
 		preg_match_all ($regexp, $content, $matches);
 		
 		# Assemble the data
-		application::dumpData ($matches);
+		//application::dumpData ($matches);
 		$data = array ();
 		$linecount = 0;
 		for ($i = 0; $i <= count ($matches[3]); $i++) {
@@ -166,7 +168,7 @@ class csv
 	}
 	
 	
-	# Function to convert a multi-dimensional keyed array back to a CSV
+	# Function to convert a multi-dimensional keyed array to a CSV
 	function dataToCsv ($data, $headers = '', $delimiter = ',')
 	{
 		# Convert the array into an array of data strings, one array item per row
