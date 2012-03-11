@@ -1,6 +1,6 @@
 <?php
 
-# Version 1.0.1
+# Version 1.1.0
 
 # Load required libraries
 require_once ('application.php');
@@ -22,7 +22,7 @@ class csv
 	# Wrapper function to get CSV data
 	#!# Consider further file error handling
 	#!# Need to merge this with application::getCsvData
-	function getData ($filename, $stripKey = true)
+	function getData ($filename, $stripKey = true, $hasNoKeys = false)
 	{
 		# Get the headers
 		#!# Not entirely efficient, but API becomes messy otherwise
@@ -31,10 +31,20 @@ class csv
 		# Open the file
 		if (!$fileHandle = fopen ($filename, 'rb')) {return false;}
 		
+		# Determine the longest line length
+		$longestLineLength = 1000;
+		$array = file ($filename);
+		for ($i = 0; $i < count ($array); $i++) {
+			if ($longestLineLength < strlen ($array[$i])) {
+				$longestLineLength = strlen ($array[$i]);
+			}
+		}
+		unset ($array);
+		
 		# Loop through each line of data
 		$data = array ();
 		$counter = 0;
-		while ($csvData = fgetcsv ($fileHandle, filesize ($filename) + 1)) {
+		while ($csvData = fgetcsv ($fileHandle, $longestLineLength + 1)) {
 			
 			# Skip if in the first (header) row
 			if (!$counter++) {continue;}
@@ -42,6 +52,7 @@ class csv
 			# Check the first item exists and set it as the row key then unset it
 			if ($rowKey = $csvData[0]) {
 				if ($stripKey) {unset ($csvData[0]);}
+				if ($hasNoKeys) {$rowKey = $counter - 1;}
 				
 				# Loop through each item of data
 				#!# What should happen if a row has fewer columns than another? If there are fields missing, then it may be better to allow offsets to be generated as otherwise the data error may not be known. Filling in the remaining fields is probably wrong as we don't know which are missing.
@@ -263,7 +274,198 @@ class csv
 		# Return true if everything worked
 		return true;
 	}
+	
+	
+	# Function to import a set of CSV files into a set of database tables
+	function filesToSql ($dataDirectory, $pattern /* e.g. ([a-z]{3})[0-9]{2}.csv - must have one capture */, $tableComment = '%s data', $prefix = '', $names = array (), &$errorsHtml = false, $highMemory = '500M')
+	{
+		# Enable high memory and prevent timeouts
+		if ($highMemory) {
+			set_time_limit (0);
+			ini_set ('memory_limit', $highMemory);
+		}
+		
+		# Load required libraries
+		require_once ('directories.php');
+		
+		# Get the list of files to import
+		if (!$csvFiles = directories::listFiles ($dataDirectory, array ('csv'), $directoryIsFromRoot = true)) {
+			$errorsHtml = "No CSV files were found in {$dataLocation}";
+			return false;
+		}
+		
+		# Compile a set of metadata about each file
+		$fileset = array ();
+		foreach ($csvFiles as $file => $attributes) {
+			$filename = $dataDirectory . $file;
+			if (!preg_match ('/^' . $pattern . '$/', $file, $matches)) {
+				$errorsHtml = "The CSV file {$file} didn't have the expected filename pattern.";
+				return false;
+			}
+			$contents = file_get_contents ($filename);
+			$fileset[$file] = array (
+				'filename'				=> $filename,
+				'grouping'				=> $matches[1],
+				'headers'				=> self::getHeaders ($filename),
+				'windowsLineEndings'	=> substr_count ($contents, "\r\n"),
+			);
+		}
+		
+		# Ensure the headers for each grouping match
+		// $fileset['filename.csv']['headers'] = array ('foo');	// Add in deliberately wrong data to trigger a test failure
+		$groupings = application::regroup ($fileset, 'grouping');
+		foreach ($groupings as $grouping => $files) {
+			if (!isSet ($names[$grouping])) {$names[$grouping] = $grouping;}	// Ensure the naming lookup exists if not supplied
+			$headers = false;
+			foreach ($files as $file => $attributes) {
+				$headersThisFile = $attributes['headers'];
+				if ($headers) {
+					if ($headersThisFile !== $headers) {
+						$errorsHtml = "The headers for CSV file {$file} didn't match another set of headers.";
+						return false;
+					}
+				}
+				$headers = $headersThisFile;
+			}
+		}
+		
+		# Initialise the structure for each grouping
+		$databaseStructure = array ();
+		foreach ($groupings as $grouping => $files) {
+			foreach ($files as $file => $attributes) {
+				$databaseStructure[$grouping] = array ();
+				foreach ($attributes['headers'] as $field) {
+					$databaseStructure[$grouping][$field] = array (
+						'type' => 'int',
+						'length' => 1,	// Avoids "VARCHAR " being created without a number
+					);
+				}
+				continue 2;	// Skip the rest of the files in this grouping as we already know they have the same headers
+			}
+		}
+		
+		# Determine the optimal database fieldtypes for all the columns across all the spreadsheets; this will be slow
+		foreach ($groupings as $grouping => $files) {
+			foreach ($files as $file => $attributes) {
+				$filename = $dataDirectory . $file;
+				
+			//	$data = self::getData ($filename, $stripKey = false, $hasNoKeys = true);
+			//	foreach ($data as $index => $row) {
+			//		foreach ($row as $key => $value) {
+				
+			/* This block extracted from getData() but without the data storage which quickly becomes inefficient on large datasets */
+				$stripKey = false;
+				$hasNoKeys = true;
+				
+				# Get the headers
+				#!# Not entirely efficient, but API becomes messy otherwise
+				if (!$headers = self::getHeaders ($filename)) {return false;}
+				
+				# Parse the CSV
+				if (!$fileHandle = fopen ($filename, 'rb')) {return false;}
+				
+				# Determine the longest line length
+				$longestLineLength = 1000;
+				$array = file ($filename);
+				for ($i = 0; $i < count ($array); $i++) {
+					if ($longestLineLength < strlen ($array[$i])) {
+						$longestLineLength = strlen ($array[$i]);
+					}
+				}
+				unset ($array);
+				
+				# Loop through each line of data
+				$data = array ();
+				$counter = 0;
+				while ($csvData = fgetcsv ($fileHandle, $longestLineLength + 1)) {
+					
+					# Skip if in the first (header) row
+					if (!$counter++) {continue;}
+					
+					# Check the first item exists and set it as the row key then unset it
+					if ($rowKey = $csvData[0]) {
+						if ($stripKey) {unset ($csvData[0]);}
+						if ($hasNoKeys) {$rowKey = $counter - 1;}
+						
+						# Loop through each item of data
+						#!# What should happen if a row has fewer columns than another? If there are fields missing, then it may be better to allow offsets to be generated as otherwise the data error may not be known. Filling in the remaining fields is probably wrong as we don't know which are missing.
+						foreach ($csvData as $key => $value) {
+							$key = $headers[$key];
+							
+			/* End of extracted section */
+							
+							# For each column, find the longest value and switch the column to varchar if it is not numeric
+							if (strlen ($value) > $databaseStructure[$grouping][$key]['length']) {
+								$databaseStructure[$grouping][$key]['length'] = strlen ($value);
+							}
+							if ($databaseStructure[$grouping][$key]['type'] == 'int') {
+								if (!ctype_digit ($value)) {
+									$databaseStructure[$grouping][$key]['type'] = 'varchar';
+								}
+							}
+						}
+					}
+				}
+				// break;	// Debug testing to stop after a single file in each grouping
+			}
+		}
+		
+		// application::dumpData ($databaseStructure);
+		// die;
+		
+		# Convert the database structure to SQL
+		$sql = '';
+		foreach ($databaseStructure as $table => $fields) {
+			$fieldsSql = array ();
+			$comment = sprintf ($tableComment, $names[$table]);
+			$sql .= "\n\n" . "-- {$comment}";
+			$sql .= "\n" . "DROP TABLE IF EXISTS `{$prefix}{$names[$table]}`;";
+			$sql .= "\n" . "CREATE TABLE `{$prefix}{$names[$table]}` (";
+			$fieldsSql[] = "id INT(11) NOT NULL AUTO_INCREMENT";
+			foreach ($fields as $fieldname => $fieldAttributes) {
+				$type = strtoupper ($fieldAttributes['type']);
+				$length = $fieldAttributes['length'];
+				if ($type == 'VARCHAR' && $length > 255) {
+					$type = 'TEXT';
+					$length = false;
+				}
+				$type = strtoupper ($fieldAttributes['type']);
+				$collation = ($type == 'VARCHAR' ? ' COLLATE utf8_unicode_ci' : '');
+				$fieldsSql[] = "`{$fieldname}` {$type}" . ($length ? "({$length})" : '') . $collation;
+			}
+			$fieldsSql[] = "PRIMARY KEY (id)";
+			$sql .= "\n\t" . implode (",\n\t", $fieldsSql);
+			$sql .= "\n" . ") ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='{$comment}';";
+		}
+		$sql .= "\n\n\n-- Data:\n\n";
+		
+		# Add statements for loading the data; see: http://dev.mysql.com/doc/refman/5.1/en/load-data.html
+		foreach ($groupings as $grouping => $files) {
+			$sql .= "\n\n" . "-- CSV {$names[$grouping]} data files:";
+			foreach ($files as $file => $attributes) {
+				$columns = implode (',', $attributes['headers']);
+				$filename = $dataDirectory . $file;
+				$sql .= "\n" . "
+				-- Data in {$file}
+				LOAD DATA LOCAL INFILE '{$filename}'
+				INTO TABLE `{$prefix}{$names[$grouping]}`
+				FIELDS TERMINATED BY ','
+				ENCLOSED BY '\"'
+				ESCAPED BY '\"'
+				LINES TERMINATED BY '" . ($attributes['windowsLineEndings'] ? "\\r\\n" : "\\n") . "'
+				IGNORE 1 LINES
+				({$columns})
+				;";
+				//break 2;
+			}
+		}
+		
+		# Return the SQL
+		return $sql;
+	}
 }
 
 
 #!# Consider an 'additionality' mode to the CSV driver for filewriting
+
+?>
