@@ -1,6 +1,6 @@
 <?php
 
-# Version 1.1.0
+# Version 1.1.1
 
 # Load required libraries
 require_once ('application.php');
@@ -462,6 +462,49 @@ class csv
 		
 		# Return the SQL
 		return $sql;
+	}
+	
+	
+	# Function to convert Excel files in a directory to CSV files; see: http://unix.stackexchange.com/a/30245 and http://stackoverflow.com/questions/3874840/csv-to-excel-conversion
+	public function xls2csv ($xlsDirectory, $csvDirectory, $pearPath = '/usr/local/lib/php/')
+	{
+		# Load the PEAR library; the function requires PHPExcel which must be in the path. Install using: /usr/local/bin/pear channel-discover pear.pearplex.net ; /usr/local/bin/pear install pearplex/PHPExcel
+		
+		if ($pearPath) {
+			set_include_path (get_include_path () . PATH_SEPARATOR . $pearPath);
+		}
+		require_once ('PHPExcel/PHPExcel/IOFactory.php');
+		
+		# Ensure the input directory exists
+		if (!is_dir ($xlsDirectory)) {
+			return false;
+		}
+		
+		# Ensure the output directory exists
+		if (!is_dir ($csvDirectory)) {
+			if (!mkdir ($csvDirectory)) {
+				return false;
+			}
+		}
+		
+		# Get a list of all the files
+		$files = directories::listFiles ($xlsDirectory, array ('xls'), $directoryIsFromRoot = true);
+		
+		# Do the file conversions
+		$converted = 0;
+		foreach ($files as $file => $attributes) {
+			$xlsFile = $xlsDirectory . $file;
+			$csvFile = $csvDirectory . preg_replace ('/.xls$/', '.csv', $file);
+			$objReader = PHPExcel_IOFactory::createReader ('Excel5');
+			$objPHPExcel = $objReader->load ($xlsFile);
+			$objWriter = PHPExcel_IOFactory::createWriter ($objPHPExcel, 'CSV');
+			$objWriter->enclosureIsOptional (true);				// Requires the patch at http://phpexcel.codeplex.com/workitem/17597
+			$objWriter->save ($csvFile);
+			$converted++;
+		}
+		
+		# Return the number of converted files
+		return $converted;
 	}
 }
 
