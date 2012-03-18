@@ -1,6 +1,6 @@
 <?php
 
-# Version 1.1.1
+# Version 1.1.2
 
 # Load required libraries
 require_once ('application.php');
@@ -277,7 +277,7 @@ class csv
 	
 	
 	# Function to import a set of CSV files into a set of database tables
-	function filesToSql ($dataDirectory, $pattern /* e.g. ([a-z]{3})[0-9]{2}.csv - must have one capture */, $tableComment = '%s data', $prefix = '', $names = array (), &$errorsHtml = false, $highMemory = '500M')
+	function filesToSql ($dataDirectory, $pattern /* e.g. ([a-z]{3})[0-9]{2}.csv - must have one capture */, $fieldLabels = array (), $tableComment = '%s data', $prefix = '', $names = array (), &$errorsHtml = false, $highMemory = '500M')
 	{
 		# Enable high memory and prevent timeouts
 		if ($highMemory) {
@@ -431,7 +431,9 @@ class csv
 				}
 				$type = strtoupper ($fieldAttributes['type']);
 				$collation = ($type == 'VARCHAR' ? ' COLLATE utf8_unicode_ci' : '');
-				$fieldsSql[] = "`{$fieldname}` {$type}" . ($length ? "({$length})" : '') . $collation;
+				$label = (($fieldLabels && is_array ($fieldLabels) && isSet ($fieldLabels[$table]) && isSet ($fieldLabels[$table][$fieldname])) ? $fieldLabels[$table][$fieldname] : false);
+				$labelEscaped = ($label ? " COMMENT '" . str_replace ("'", "''", $label) . "'" : '');
+				$fieldsSql[] = "`{$fieldname}` {$type}" . ($length ? "({$length})" : '') . $collation . $labelEscaped;
 			}
 			$fieldsSql[] = "PRIMARY KEY (id)";
 			$sql .= "\n\t" . implode (",\n\t", $fieldsSql);
@@ -489,6 +491,9 @@ class csv
 		
 		# Get a list of all the files
 		$files = directories::listFiles ($xlsDirectory, array ('xls'), $directoryIsFromRoot = true);
+		
+		# Give an explicit ordering
+		ksort ($files);
 		
 		# Do the file conversions
 		$converted = 0;
