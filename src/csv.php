@@ -1,6 +1,6 @@
 <?php
 
-# Version 1.1.2
+# Version 1.1.3
 
 # Load required libraries
 require_once ('application.php');
@@ -200,6 +200,24 @@ class csv
 		
 		# Return the CSV data
 		return $csvString;
+	}
+	
+	
+	# Function to serve a CSV file from data
+	function serve ($data, $filenameBase = 'data', $timestamp = true)
+	{
+		# Convert to CSV
+		$csv = self::dataToCsv ($data);
+		
+		# Add a timestamp if required
+		if ($timestamp) {
+			$filenameBase .= '_savedAt' . date ('Ymd-His');
+		}
+		
+		# Publish, by sending a header and then echoing the data
+		header ('Content-type: application/octet-stream');
+		header ('Content-Disposition: attachment; filename="' . $filenameBase . '.csv"');
+		echo $csv;
 	}
 	
 	
