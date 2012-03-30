@@ -1,6 +1,6 @@
 <?php
 
-# Version 1.1.3
+# Version 1.1.4
 
 # Load required libraries
 require_once ('application.php');
@@ -94,7 +94,7 @@ class csv
 	
 	
 	# Wrapper function to turn a (possibly multi-dimensional) associative array into a correctly-formatted CSV format (including escapes)
-	function arrayToCsv ($array, $delimiter = ',', $nestParent = false)
+	function arrayToCsv ($array, $delimiter = ',', $nestParent = false, $headerLabels = array ())
 	{
 		# Start an array of headers and the data
 		$headers = array ();
@@ -120,6 +120,15 @@ class csv
 				# Add the key and value to arrays of the headers and data
 				$headers[] = csv::safeDataCell ($key, $delimiter);
 				$data[] = csv::safeDataCell ($value, $delimiter);
+			}
+		}
+		
+		# Substitute the header labels if supplied
+		if ($headerLabels) {
+			foreach ($headers as $index => $header) {
+				if (isSet ($headerLabels[$header])) {
+					$headers[$index] = csv::safeDataCell ($headerLabels[$header]);
+				}
 			}
 		}
 		
@@ -180,7 +189,7 @@ class csv
 	
 	
 	# Function to convert a multi-dimensional keyed array to a CSV
-	function dataToCsv ($data, $headers = '', $delimiter = ',')
+	function dataToCsv ($data, $headers = '', $delimiter = ',', $headerLabels = array ())
 	{
 		# Convert the array into an array of data strings, one array item per row
 		$csv = array ();
@@ -189,7 +198,7 @@ class csv
 			$headers = implode ($delimiter, $headers) . "\n";
 		}
 		foreach ($data as $key => $values) {
-			list ($headers, $csv[]) = csv::arrayToCsv ($values);
+			list ($headers, $csv[]) = csv::arrayToCsv ($values, ',', false, $headerLabels);
 		}
 		
 		# Add the headers
@@ -204,10 +213,10 @@ class csv
 	
 	
 	# Function to serve a CSV file from data
-	function serve ($data, $filenameBase = 'data', $timestamp = true)
+	function serve ($data, $filenameBase = 'data', $timestamp = true, $headerLabels = array ())
 	{
 		# Convert to CSV
-		$csv = self::dataToCsv ($data);
+		$csv = self::dataToCsv ($data, '', ',', $headerLabels);
 		
 		# Add a timestamp if required
 		if ($timestamp) {
