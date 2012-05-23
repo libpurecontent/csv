@@ -1,6 +1,6 @@
 <?php
 
-# Version 1.1.4
+# Version 1.1.5
 
 # Load required libraries
 require_once ('application.php');
@@ -189,7 +189,7 @@ class csv
 	
 	
 	# Function to convert a multi-dimensional keyed array to a CSV
-	function dataToCsv ($data, $headers = '', $delimiter = ',', $headerLabels = array ())
+	function dataToCsv ($data, $headers = '', $delimiter = ',', $headerLabels = array (), $includeHeaderRow = true)
 	{
 		# Convert the array into an array of data strings, one array item per row
 		$csv = array ();
@@ -201,8 +201,10 @@ class csv
 			list ($headers, $csv[]) = csv::arrayToCsv ($values, ',', false, $headerLabels);
 		}
 		
-		# Add the headers
-		array_unshift ($csv, $headers);
+		# Add the headers if required
+		if ($includeHeaderRow) {
+			array_unshift ($csv, $headers);
+		}
 		
 		# Compile the CSV lines (each of which will end with a newline already)
 		$csvString = implode ('', $csv);
@@ -304,7 +306,7 @@ class csv
 	
 	
 	# Function to import a set of CSV files into a set of database tables
-	function filesToSql ($dataDirectory, $pattern /* e.g. ([a-z]{3})[0-9]{2}.csv - must have one capture */, $fieldLabels = array (), $tableComment = '%s data', $prefix = '', $names = array (), &$errorsHtml = false, $highMemory = '500M')
+	function filesToSql ($dataDirectory, $pattern /* e.g. ([a-z]{3})[0-9]{2}.csv - must have one capture, or just be a simple filename */, $fieldLabels = array (), $tableComment = '%s data', $prefix = '', $names = array (), &$errorsHtml = false, $highMemory = '500M')
 	{
 		# Enable high memory and prevent timeouts
 		if ($highMemory) {
@@ -316,8 +318,9 @@ class csv
 		require_once ('directories.php');
 		
 		# Get the list of files to import
+		$dataDirectory = $dataDirectory . (substr ($dataDirectory, -1) == '/' ? '' : '/');	// Ensure it is slash-terminated
 		if (!$csvFiles = directories::listFiles ($dataDirectory, array ('csv'), $directoryIsFromRoot = true)) {
-			$errorsHtml = "No CSV files were found in {$dataLocation}";
+			$errorsHtml = "No CSV files were found in {$dataDirectory}";
 			return false;
 		}
 		
@@ -325,14 +328,19 @@ class csv
 		$fileset = array ();
 		foreach ($csvFiles as $file => $attributes) {
 			$filename = $dataDirectory . $file;
-			if (!preg_match ('/^' . $pattern . '$/', $file, $matches)) {
-				$errorsHtml = "The CSV file {$file} didn't have the expected filename pattern.";
-				return false;
+			if (substr_count ('(', $pattern)) {		// If the pattern is a regex
+				if (!preg_match ('/^' . $pattern . '$/', $file, $matches)) {
+					$errorsHtml = "The CSV file {$file} didn't have the expected filename pattern.";
+					return false;
+				}
+				$grouping = $matches[1];
+			} else {
+				$grouping = pathinfo ($pattern, PATHINFO_FILENAME);
 			}
 			$contents = file_get_contents ($filename);
 			$fileset[$file] = array (
 				'filename'				=> $filename,
-				'grouping'				=> $matches[1],
+				'grouping'				=> $grouping,
 				'headers'				=> self::getHeaders ($filename),
 				'windowsLineEndings'	=> substr_count ($contents, "\r\n"),
 			);
@@ -392,6 +400,8 @@ class csv
 				if (!$fileHandle = fopen ($filename, 'rb')) {return false;}
 				
 				# Determine the longest line length
+				/*
+			# Removed as inefficient - reinstate if problems found
 				$longestLineLength = 1000;
 				$array = file ($filename);
 				for ($i = 0; $i < count ($array); $i++) {
@@ -400,6 +410,8 @@ class csv
 					}
 				}
 				unset ($array);
+				*/
+				$longestLineLength = 4096;
 				
 				# Loop through each line of data
 				$data = array ();
@@ -456,7 +468,6 @@ class csv
 					$type = 'TEXT';
 					$length = false;
 				}
-				$type = strtoupper ($fieldAttributes['type']);
 				$collation = ($type == 'VARCHAR' ? ' COLLATE utf8_unicode_ci' : '');
 				$label = (($fieldLabels && is_array ($fieldLabels) && isSet ($fieldLabels[$table]) && isSet ($fieldLabels[$table][$fieldname])) ? $fieldLabels[$table][$fieldname] : false);
 				$labelEscaped = ($label ? " COMMENT '" . str_replace ("'", "''", $label) . "'" : '');
@@ -472,7 +483,7 @@ class csv
 		foreach ($groupings as $grouping => $files) {
 			$sql .= "\n\n" . "-- CSV {$names[$grouping]} data files:";
 			foreach ($files as $file => $attributes) {
-				$columns = implode (',', $attributes['headers']);
+				$columns = '`' . implode ('`,`', $attributes['headers']) . '`';
 				$filename = $dataDirectory . $file;
 				$sql .= "\n" . "
 				-- Data in {$file}
