@@ -1,6 +1,6 @@
 <?php
 
-# Version 1.1.5
+# Version 1.2.0
 
 # Load required libraries
 require_once ('application.php');
@@ -493,6 +493,7 @@ class csv
 				ENCLOSED BY '\"'
 				ESCAPED BY '\"'
 				LINES TERMINATED BY '" . ($attributes['windowsLineEndings'] ? "\\r\\n" : "\\n") . "'
+				/* #!# Note this terrible MySQL bug which means the first line is skipped: http://bugs.mysql.com/bug.php?id=39247 */
 				IGNORE 1 LINES
 				({$columns})
 				;";
@@ -548,6 +549,50 @@ class csv
 		
 		# Return the number of converted files
 		return $converted;
+	}
+	
+	
+	# Function to process a TSV string (e.g. pasted from Excel)
+	public function tsvToArray ($string, $firstColumnIsId = false)
+	{
+		# Start an array of data to fill
+		$data = array ();
+		
+		# Split by newline
+		$lines = explode ("\n", $string);
+		
+		# For each line, create an array of cells
+		foreach ($lines as $rowNumber => $line) {
+			
+			# Dealing with \r\n (now \r) line endings
+			$line = trim ($line);
+			
+			# Create the cells
+			$cells = explode ("\t", $line);
+			
+			# Create the header row
+			if ($rowNumber == 0) {
+				$headers = $cells;
+				continue;
+			}
+			
+			# Allocate each row, with the index starting from 0
+			foreach ($cells as $cellIndex => $cell) {
+				if ($firstColumnIsId) {
+					if ($cellIndex == 0) {
+						$id = $cell;
+						continue;
+					}
+				} else {
+					$id = $rowNumber - 1;
+				}
+				$key = $headers[$cellIndex];
+				$data[$id][$key] = $cell;
+			}
+		}
+		
+		# Return the data
+		return $data;
 	}
 }
 
