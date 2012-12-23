@@ -1,6 +1,6 @@
 <?php
 
-# Version 1.2.0
+# Version 1.2.1
 
 # Load required libraries
 require_once ('application.php');
@@ -553,7 +553,7 @@ class csv
 	
 	
 	# Function to process a TSV string (e.g. pasted from Excel)
-	public function tsvToArray ($string, $firstColumnIsId = false)
+	public function tsvToArray ($string, $firstColumnIsId = false, $firstColumnIsIdIncludeInData = false)
 	{
 		# Start an array of data to fill
 		$data = array ();
@@ -581,7 +581,9 @@ class csv
 				if ($firstColumnIsId) {
 					if ($cellIndex == 0) {
 						$id = $cell;
-						continue;
+						if (!$firstColumnIsIdIncludeInData) {
+							continue;
+						}
 					}
 				} else {
 					$id = $rowNumber - 1;
