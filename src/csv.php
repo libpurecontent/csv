@@ -1,6 +1,6 @@
 <?php
 
-# Version 1.2.1
+# Version 1.3.0
 
 # Load required libraries
 require_once ('application.php');
@@ -9,7 +9,7 @@ require_once ('application.php');
 class csv
 {
 	# Function to write to a file
-	function createNew ($filename, $headersArray, $delimiter = ',')
+	public static function createNew ($filename, $headersArray, $delimiter = ',')
 	{
 		# Convert the headers array into a string
 		$headers = implode ($delimiter, $headersArray);
@@ -22,7 +22,7 @@ class csv
 	# Wrapper function to get CSV data
 	#!# Consider further file error handling
 	#!# Need to merge this with application::getCsvData
-	function getData ($filename, $stripKey = true, $hasNoKeys = false)
+	public static function getData ($filename, $stripKey = true, $hasNoKeys = false)
 	{
 		# Get the headers
 		#!# Not entirely efficient, but API becomes messy otherwise
@@ -73,7 +73,7 @@ class csv
 	
 	
 	# Function to get the headers (i.e. the first line)
-	function getHeaders ($filename)
+	public static function getHeaders ($filename)
 	{
 		# Open the file
 		if (!is_readable ($filename)) {return false;}
@@ -94,7 +94,7 @@ class csv
 	
 	
 	# Wrapper function to turn a (possibly multi-dimensional) associative array into a correctly-formatted CSV format (including escapes)
-	function arrayToCsv ($array, $delimiter = ',', $nestParent = false, $headerLabels = array ())
+	public static function arrayToCsv ($array, $delimiter = ',', $nestParent = false, $headerLabels = array ())
 	{
 		# Start an array of headers and the data
 		$headers = array ();
@@ -142,7 +142,7 @@ class csv
 	
 	
 	# Function to convert CSV string to an array - from www.php.net/manual/en/function.fgetcsv.php#50186
-	function csvtoArray ($content, $delimiter = ',', $enclosure = '"', $optional = 1)
+	public static function csvtoArray ($content, $delimiter = ',', $enclosure = '"', $optional = 1)
 	{
 		# Define a regexp
 		$regexp = '/(('.$enclosure.')'.($optional?'?(?(2)':'(').'[^'.$enclosure.']*'.$enclosure.'|[^'.$delimiter.'\r\n]*))('.$delimiter.'|\r\n)/smi';
@@ -168,7 +168,7 @@ class csv
 	
 	
 	# Called function to make a data cell CSV-safe
-	function safeDataCell ($data, $delimiter = ',')
+	public static function safeDataCell ($data, $delimiter = ',')
 	{
 		#!# Consider a flag for HTML entity cleaning so that e.g. " rather than &#8220; appears in Excel
 		
@@ -189,7 +189,7 @@ class csv
 	
 	
 	# Function to convert a multi-dimensional keyed array to a CSV
-	function dataToCsv ($data, $headers = '', $delimiter = ',', $headerLabels = array (), $includeHeaderRow = true)
+	public static function dataToCsv ($data, $headers = '', $delimiter = ',', $headerLabels = array (), $includeHeaderRow = true)
 	{
 		# Convert the array into an array of data strings, one array item per row
 		$csv = array ();
@@ -215,7 +215,7 @@ class csv
 	
 	
 	# Function to serve a CSV file from data
-	function serve ($data, $filenameBase = 'data', $timestamp = true, $headerLabels = array ())
+	public static function serve ($data, $filenameBase = 'data', $timestamp = true, $headerLabels = array ())
 	{
 		# Convert to CSV
 		$csv = self::dataToCsv ($data, '', ',', $headerLabels);
@@ -233,7 +233,7 @@ class csv
 	
 	
 	# Function to add (or amend) an item to a CSV file
-	function addItem ($file, $newItem, $addStamp = '.old')
+	public static function addItem ($file, $newItem, $addStamp = '.old')
 	{
 		# Get the headers
 		if (!$headers = csv::getHeaders ($file)) {return false;}
@@ -260,7 +260,7 @@ class csv
 	
 	
 	# Function to delete item(s) from a CSV file
-	function deleteData ($file, $keys, $addStamp = '.old')
+	public static function deleteData ($file, $keys, $addStamp = '.old')
 	{
 		# Get the headers
 		$headers = csv::getHeaders ($file);
@@ -289,7 +289,7 @@ class csv
 	
 	
 	# Function to rewrite the CSV
-	function rewrite ($file, $newData, $addStamp = '.old')
+	public static function rewrite ($file, $newData, $addStamp = '.old')
 	{
 		# Backup the previous file
 		if ($addStamp) {
@@ -306,7 +306,7 @@ class csv
 	
 	
 	# Function to import a set of CSV files into a set of database tables
-	function filesToSql ($dataDirectory, $pattern /* e.g. ([a-z]{3})[0-9]{2}.csv - must have one capture, or just be a simple filename */, $fieldLabels = array (), $tableComment = '%s data', $prefix = '', $names = array (), &$errorsHtml = false, $highMemory = '500M')
+	public static function filesToSql ($dataDirectory, $pattern /* e.g. ([a-z]{3})[0-9]{2}.csv - must have one capture, or just be a simple filename */, $fieldLabels = array (), $tableComment = '%s data', $prefix = '', $names = array (), &$errorsHtml = false, $highMemory = '500M')
 	{
 		# Enable high memory and prevent timeouts
 		if ($highMemory) {
@@ -507,7 +507,7 @@ class csv
 	
 	
 	# Function to convert Excel files in a directory to CSV files; see: http://unix.stackexchange.com/a/30245 and http://stackoverflow.com/questions/3874840/csv-to-excel-conversion
-	public function xls2csv ($xlsDirectory, $csvDirectory, $pearPath = '/usr/local/lib/php/')
+	public static function xls2csv ($xlsDirectory, $csvDirectory, $pearPath = '/usr/local/lib/php/')
 	{
 		# Load the PEAR library; the function requires PHPExcel which must be in the path. Install using: /usr/local/bin/pear channel-discover pear.pearplex.net ; /usr/local/bin/pear install pearplex/PHPExcel
 		
@@ -553,7 +553,7 @@ class csv
 	
 	
 	# Function to process a TSV string (e.g. pasted from Excel)
-	public function tsvToArray ($string, $firstColumnIsId = false, $firstColumnIsIdIncludeInData = false)
+	public static function tsvToArray ($string, $firstColumnIsId = false, $firstColumnIsIdIncludeInData = false)
 	{
 		# Start an array of data to fill
 		$data = array ();
