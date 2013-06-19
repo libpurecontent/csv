@@ -1,6 +1,6 @@
 <?php
 
-# Version 1.3.0
+# Version 1.3.1
 
 # Load required libraries
 require_once ('application.php');
@@ -34,7 +34,8 @@ class csv
 		# Determine the longest line length
 		$longestLineLength = 1000;
 		$array = file ($filename);
-		for ($i = 0; $i < count ($array); $i++) {
+		$count = count ($array);
+		for ($i = 0; $i < $count; $i++) {
 			if ($longestLineLength < strlen ($array[$i])) {
 				$longestLineLength = strlen ($array[$i]);
 			}
@@ -154,7 +155,8 @@ class csv
 		//application::dumpData ($matches);
 		$data = array ();
 		$linecount = 0;
-		for ($i = 0; $i <= count ($matches[3]); $i++) {
+		$count = count ($matches[3]);
+		for ($i = 0; $i <= $count; $i++) {
 			$data[$linecount][] = $matches[1][$i];
 			if ($matches[3][$i] != $delimiter) {
 				$linecount++;
@@ -404,7 +406,8 @@ class csv
 			# Removed as inefficient - reinstate if problems found
 				$longestLineLength = 1000;
 				$array = file ($filename);
-				for ($i = 0; $i < count ($array); $i++) {
+				$count = count ($array);
+				for ($i = 0; $i < $count; $i++) {
 					if ($longestLineLength < strlen ($array[$i])) {
 						$longestLineLength = strlen ($array[$i]);
 					}
