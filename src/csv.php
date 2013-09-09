@@ -1,6 +1,6 @@
 <?php
 
-# Version 1.3.1
+# Version 1.3.2
 
 # Load required libraries
 require_once ('application.php');
@@ -513,7 +513,6 @@ class csv
 	public static function xls2csv ($xlsDirectory, $csvDirectory, $pearPath = '/usr/local/lib/php/')
 	{
 		# Load the PEAR library; the function requires PHPExcel which must be in the path. Install using: /usr/local/bin/pear channel-discover pear.pearplex.net ; /usr/local/bin/pear install pearplex/PHPExcel
-		
 		if ($pearPath) {
 			set_include_path (get_include_path () . PATH_SEPARATOR . $pearPath);
 		}
@@ -556,19 +555,17 @@ class csv
 	
 	
 	# Function to process a TSV string (e.g. pasted from Excel)
-	public static function tsvToArray ($string, $firstColumnIsId = false, $firstColumnIsIdIncludeInData = false)
+	public static function tsvToArray ($string, $firstColumnIsId = false, $firstColumnIsIdIncludeInData = false, &$errorMessage = '')
 	{
 		# Start an array of data to fill
 		$data = array ();
 		
 		# Split by newline
+		$string = str_replace ("\r\n", "\n", $string);	// Normalise to \n
 		$lines = explode ("\n", $string);
 		
 		# For each line, create an array of cells
 		foreach ($lines as $rowNumber => $line) {
-			
-			# Dealing with \r\n (now \r) line endings
-			$line = trim ($line);
 			
 			# Create the cells
 			$cells = explode ("\t", $line);
@@ -576,23 +573,41 @@ class csv
 			# Create the header row
 			if ($rowNumber == 0) {
 				$headers = $cells;
+				$totalHeaders = count ($headers);
 				continue;
 			}
 			
+			# Return false if any row has more cells than headers
+			if (count ($cells) > $totalHeaders) {
+				$errorMessage = "Row " . ($rowNumber + 1) . " has more cells than headers, so the data is faulty. Please check you have supplied enough header titles in the first row.";	// Show row number as human number, not zero-indexed
+				return false;
+			}
+			
+			# Determine the ID of this row
+			$rowId = ($firstColumnIsId ? $cells[0] : ($rowNumber - 1));
+			
+			# Ensure each field is present in the final data
+			$headersInFinalData = $headers;
+			if ($firstColumnIsId && !$firstColumnIsIdIncludeInData) {
+				unset ($headersInFinalData[0]);
+			}
+			$data[$rowId] = array_fill_keys ($headersInFinalData, '');
+			
 			# Allocate each row, with the index starting from 0
-			foreach ($cells as $cellIndex => $cell) {
-				if ($firstColumnIsId) {
-					if ($cellIndex == 0) {
-						$id = $cell;
-						if (!$firstColumnIsIdIncludeInData) {
-							continue;
-						}
+			foreach ($cells as $index => $cell) {
+				
+				# Skip first column if required
+				if ($firstColumnIsId && !$firstColumnIsIdIncludeInData) {
+					if ($index == 0) {
+						continue;
 					}
-				} else {
-					$id = $rowNumber - 1;
 				}
-				$key = $headers[$cellIndex];
-				$data[$id][$key] = $cell;
+				
+				# Determine the fieldname
+				$fieldname = $headers[$index];
+				
+				# Allocate the cell into the final data
+				$data[$rowId][$fieldname] = $cell;
 			}
 		}
 		
