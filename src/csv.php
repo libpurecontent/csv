@@ -1,6 +1,6 @@
 <?php
 
-# Version 1.3.2
+# Version 1.3.3
 
 # Load required libraries
 require_once ('application.php');
@@ -516,7 +516,7 @@ class csv
 		if ($pearPath) {
 			set_include_path (get_include_path () . PATH_SEPARATOR . $pearPath);
 		}
-		require_once ('PHPExcel/PHPExcel/IOFactory.php');
+		require_once ('PHPExcel/PHPExcel/Classes/PHPExcel/IOFactory.php');
 		
 		# Ensure the input directory exists
 		if (!is_dir ($xlsDirectory)) {
@@ -531,7 +531,7 @@ class csv
 		}
 		
 		# Get a list of all the files
-		$files = directories::listFiles ($xlsDirectory, array ('xls'), $directoryIsFromRoot = true);
+		$files = directories::listFiles ($xlsDirectory, array ('xls', 'xlsx'), $directoryIsFromRoot = true);
 		
 		# Give an explicit ordering
 		ksort ($files);
@@ -540,11 +540,12 @@ class csv
 		$converted = 0;
 		foreach ($files as $file => $attributes) {
 			$xlsFile = $xlsDirectory . $file;
-			$csvFile = $csvDirectory . preg_replace ('/.xls$/', '.csv', $file);
-			$objReader = PHPExcel_IOFactory::createReader ('Excel5');
+			$csvFile = $csvDirectory . preg_replace ("/.{$attributes['extension']}$/", '.csv', $file);
+			$excelImplementation = ($attributes['extension'] == 'xls' ? 'Excel5' : 'Excel2007');
+			$objReader = PHPExcel_IOFactory::createReader ($excelImplementation);
 			$objPHPExcel = $objReader->load ($xlsFile);
 			$objWriter = PHPExcel_IOFactory::createWriter ($objPHPExcel, 'CSV');
-			$objWriter->enclosureIsOptional (true);				// Requires the patch at http://phpexcel.codeplex.com/workitem/17597
+			$objWriter->setEnclosureIsOptional (true);				// Requires the patch at https://github.com/PHPOffice/PHPExcel/issues/282
 			$objWriter->save ($csvFile);
 			$converted++;
 		}
