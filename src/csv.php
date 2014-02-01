@@ -1,6 +1,6 @@
 <?php
 
-# Version 1.3.3
+# Version 1.3.4
 
 # Load required libraries
 require_once ('application.php');
@@ -200,7 +200,7 @@ class csv
 			$headers = implode ($delimiter, $headers) . "\n";
 		}
 		foreach ($data as $key => $values) {
-			list ($headers, $csv[]) = csv::arrayToCsv ($values, ',', false, $headerLabels);
+			list ($headers, $csv[]) = csv::arrayToCsv ($values, $delimiter, false, $headerLabels);
 		}
 		
 		# Add the headers if required
