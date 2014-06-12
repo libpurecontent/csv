@@ -1,6 +1,6 @@
 <?php
 
-# Version 1.3.5
+# Version 1.3.6
 
 # Load required libraries
 require_once ('application.php');
@@ -543,7 +543,7 @@ class csv
 		ksort ($files);
 		
 		# Do the file conversions
-		$converted = 0;
+		$converted = array ();
 		foreach ($files as $file => $attributes) {
 			$xlsFile = $xlsDirectory . $file;
 			$csvFile = $csvDirectory . preg_replace ("/.{$attributes['extension']}$/", '.csv', $file);
@@ -553,10 +553,10 @@ class csv
 			$objWriter = PHPExcel_IOFactory::createWriter ($objPHPExcel, 'CSV');
 			$objWriter->setEnclosureIsOptional (true);				// Requires the patch at https://github.com/PHPOffice/PHPExcel/issues/282
 			$objWriter->save ($csvFile);
-			$converted++;
+			$converted[$xlsDirectory . $file] = $csvFile;
 		}
 		
-		# Return the number of converted files
+		# Return the list of successfully converted files
 		return $converted;
 	}
 	
