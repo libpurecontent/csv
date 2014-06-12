@@ -1,6 +1,6 @@
 <?php
 
-# Version 1.3.6
+# Version 1.3.7
 
 # Load required libraries
 require_once ('application.php');
@@ -22,7 +22,7 @@ class csv
 	# Wrapper function to get CSV data
 	#!# Consider further file error handling
 	#!# Need to merge this with application::getCsvData
-	public static function getData ($filename, $stripKey = true, $hasNoKeys = false)
+	public static function getData ($filename, $stripKey = true, $hasNoKeys = false, $allowsRowsWithEmptyFirstColumn = false)
 	{
 		# Get the headers
 		#!# Not entirely efficient, but API becomes messy otherwise
@@ -51,7 +51,12 @@ class csv
 			if (!$counter++) {continue;}
 			
 			# Check the first item exists and set it as the row key then unset it
-			if ($rowKey = $csvData[0]) {
+			$rowExists = (strlen ($csvData[0]) || $allowsRowsWithEmptyFirstColumn);
+			if ($rowExists) {
+				
+				# Obtain the row key, being the first column's value
+				$rowKey = $csvData[0];
+				
 				if ($stripKey) {unset ($csvData[0]);}
 				if ($hasNoKeys) {$rowKey = $counter - 1;}
 				
@@ -616,6 +621,45 @@ class csv
 				# Allocate the cell into the final data
 				$data[$rowId][$fieldname] = $cell;
 			}
+		}
+		
+		# Return the data
+		return $data;
+	}
+	
+	
+	# Function to fill in missing cell values by emulating the effect of a 'swipe downwards' in a spreadsheet
+	public static function swipeDownwards ($data, $onlyFields = array ())
+	{
+		# Loop through each row, saving a cache of the previous row
+		$firstRow = true;
+		foreach ($data as $id => $row) {
+			
+			# The first row cannot be swiped
+			if ($firstRow) {
+				$previousRow = $row;	// Create the cache for the second row
+				$firstRow = false;
+				continue;
+			}
+			
+			# Loop through the cells in each row
+			foreach ($row as $field => $value) {
+				
+				# Skip if not required for this field
+				if ($onlyFields) {
+					if (!in_array ($field, $onlyFields)) {
+						continue;
+					}
+				}
+				
+				# Copy down the values from the previous row if none
+				if (!strlen ($value)) {
+					$data[$id][$field] = $previousRow[$field];
+				}
+			}
+			
+			# Cache the row value
+			$previousRow = $data[$id];
 		}
 		
 		# Return the data
