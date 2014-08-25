@@ -1,6 +1,6 @@
 <?php
 
-# Version 1.3.7
+# Version 1.3.8
 
 # Load required libraries
 require_once ('application.php');
@@ -341,7 +341,7 @@ class csv
 		$fileset = array ();
 		foreach ($csvFiles as $file => $attributes) {
 			$filename = $dataDirectory . $file;
-			if (substr_count ('(', $pattern)) {		// If the pattern is a regex
+			if (substr_count ($pattern, '(')) {		// If the pattern is a regex
 				if (!preg_match ('/^' . $pattern . '$/', $file, $matches)) {
 					$errorsHtml = "The CSV file {$file} didn't have the expected filename pattern.";
 					return false;
