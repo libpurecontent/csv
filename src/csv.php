@@ -1,6 +1,6 @@
 <?php
 
-# Version 1.3.8
+# Version 1.3.9
 
 # Load required libraries
 require_once ('application.php');
@@ -86,7 +86,8 @@ class csv
 		$fileHandle = fopen ($filename, 'rb');
 		
 		# Get the column names
-		$headers = fgetcsv ($fileHandle, filesize ($filename) + 1);
+		$longestLineLength = 4096;	#!# Hard-coded
+		$headers = fgetcsv ($fileHandle, $longestLineLength);
 		
 		# Close the file
 		fclose ($fileHandle);
