@@ -1,6 +1,6 @@
 <?php
 
-# Version 1.3.9
+# Version 1.3.10
 
 # Load required libraries
 require_once ('application.php');
@@ -100,8 +100,8 @@ class csv
 	}
 	
 	
-	# Wrapper function to turn a (possibly multi-dimensional) associative array into a correctly-formatted CSV format (including escapes)
-	public static function arrayToCsv ($array, $delimiter = ',', $nestParent = false, $headerLabels = array ())
+	# Wrapper function to turn a (possibly multi-dimensional) associative array into a correctly-formatted CSV format (including escapes), for one line
+	public static function arrayToCsv ($array, $delimiter = ',', $nestParent = false, $headerLabels = array (), $prefixEqualsSign = false /* false/true/array(field1,field2,...) */)
 	{
 		# Start an array of headers and the data
 		$headers = array ();
@@ -121,12 +121,15 @@ class csv
 			# If the associative array is multi-dimensional, assign directly
 			} else {
 				
+				# Determine whether to force quotes for this field
+				$prefixEqualsSignThisField = (is_array ($prefixEqualsSign) ? in_array ($key, $prefixEqualsSign) : $prefixEqualsSign);
+				
 				# In nested mode, prepend the each key name with the parent name
-				if ($nestParent) {$key = "$nestParent: $key";}
+				if ($nestParent) {$key = "{$nestParent}: {$key}";}
 				
 				# Add the key and value to arrays of the headers and data
 				$headers[] = csv::safeDataCell ($key, $delimiter);
-				$data[] = csv::safeDataCell ($value, $delimiter);
+				$data[] = csv::safeDataCell ($value, $delimiter, $prefixEqualsSignThisField);
 			}
 		}
 		
@@ -176,7 +179,7 @@ class csv
 	
 	
 	# Called function to make a data cell CSV-safe
-	public static function safeDataCell ($data, $delimiter = ',')
+	public static function safeDataCell ($data, $delimiter = ',', $prefixEqualsSign = false)
 	{
 		#!# Consider a flag for HTML entity cleaning so that e.g. " rather than &#8220; appears in Excel
 		
@@ -189,7 +192,12 @@ class csv
 		# $data = str_replace ("\r\n", "\n", $data);
 		
 		# If an item contains the delimiter or line breaks, surround with quotes
-		if ((strpos ($data, $delimiter) !== false) || (strpos ($data, "\n") !== false) || (strpos ($data, '"') !== false)) {$data = '"' . $data . '"';}
+		if ((strpos ($data, $delimiter) !== false) || (strpos ($data, "\n") !== false) || (strpos ($data, '"') !== false) || $prefixEqualsSign) {$data = '"' . $data . '"';}
+		
+		# Prefix with an equals sign if required; see: http://craiccomputing.blogspot.co.uk/2012/08/preventing-excel-from-wrongly.html
+		if ($prefixEqualsSign) {
+			$data = '=' . $data;
+		}
 		
 		# Return the cleaned data cell
 		return $data;
@@ -197,7 +205,7 @@ class csv
 	
 	
 	# Function to convert a multi-dimensional keyed array to a CSV
-	public static function dataToCsv ($data, $headers = '', $delimiter = ',', $headerLabels = array (), $includeHeaderRow = true)
+	public static function dataToCsv ($data, $headers = '', $delimiter = ',', $headerLabels = array (), $includeHeaderRow = true, $prefixEqualsSign = false /* false/true/array(field1,field2,...) */)
 	{
 		# Convert the array into an array of data strings, one array item per row
 		$csv = array ();
@@ -206,7 +214,7 @@ class csv
 			$headers = implode ($delimiter, $headers) . "\n";
 		}
 		foreach ($data as $key => $values) {
-			list ($headers, $csv[]) = csv::arrayToCsv ($values, $delimiter, false, $headerLabels);
+			list ($headers, $csv[]) = csv::arrayToCsv ($values, $delimiter, false, $headerLabels, $prefixEqualsSign);
 		}
 		
 		# Add the headers if required
