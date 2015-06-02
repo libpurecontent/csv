@@ -1,6 +1,6 @@
 <?php
 
-# Version 1.3.10
+# Version 1.3.11
 
 # Load required libraries
 require_once ('application.php');
@@ -551,6 +551,7 @@ class csv
 		}
 		
 		# Get a list of all the files
+		require_once ('directories.php');
 		$files = directories::listFiles ($xlsDirectory, array ('xls', 'xlsx'), $directoryIsFromRoot = true);
 		
 		# Give an explicit ordering
@@ -559,6 +560,7 @@ class csv
 		# Do the file conversions
 		$converted = array ();
 		foreach ($files as $file => $attributes) {
+			if (preg_match ('/^$/', $file)) {continue;}	// Skip shadow Excel files, which begin ~
 			$xlsFile = $xlsDirectory . $file;
 			$csvFile = $csvDirectory . preg_replace ("/.{$attributes['extension']}$/", '.csv', $file);
 			$excelImplementation = ($attributes['extension'] == 'xls' ? 'Excel5' : 'Excel2007');
