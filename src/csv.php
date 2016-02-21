@@ -1,6 +1,6 @@
 <?php
 
-# Version 1.3.11
+# Version 1.3.12
 
 # Load required libraries
 require_once ('application.php');
@@ -578,7 +578,7 @@ class csv
 	
 	
 	# Function to process a TSV string (e.g. pasted from Excel)
-	public static function tsvToArray ($string, $firstColumnIsId = false, $firstColumnIsIdIncludeInData = false, &$errorMessage = '')
+	public static function tsvToArray ($string, $firstColumnIsId = false, $firstColumnIsIdIncludeInData = false, &$errorMessage = '', $skipRowsEmptyFirstCell = false)
 	{
 		# Start an array of data to fill
 		$data = array ();
@@ -598,6 +598,13 @@ class csv
 				$headers = $cells;
 				$totalHeaders = count ($headers);
 				continue;
+			}
+			
+			# If required, skip this row if the first cell is empty
+			if ($skipRowsEmptyFirstCell) {
+				if (!strlen ($cells[0])) {
+					continue;
+				}
 			}
 			
 			# Return false if any row has more cells than headers
