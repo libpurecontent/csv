@@ -1,6 +1,6 @@
 <?php
 
-# Version 1.3.12
+# Version 1.3.13
 
 # Load required libraries
 require_once ('application.php');
@@ -231,10 +231,12 @@ class csv
 	
 	
 	# Function to serve a CSV file from data
-	public static function serve ($data, $filenameBase = 'data', $timestamp = true, $headerLabels = array (), $zipped = false)
+	public static function serve ($data /* either associative array or pre-constructed CSV string */, $filenameBase = 'data', $timestamp = true, $headerLabels = array (), $zipped = false)
 	{
-		# Convert to CSV
-		$csv = self::dataToCsv ($data, '', ',', $headerLabels);
+		# Convert to string if required
+		if (!is_string ($data)) {
+			$data = self::dataToCsv ($data, '', ',', $headerLabels);
+		}
 		
 		# Add a timestamp if required
 		if ($timestamp) {
@@ -243,14 +245,14 @@ class csv
 		
 		# If zipped, emit the data in a zip enclosure
 		if ($zipped) {
-			application::zipFromString ($csv, $filenameBase . '.csv');
+			application::zipFromString ($data, $filenameBase . '.csv');
 			return;
 		}
 		
 		# Publish, by sending a header and then echoing the data
 		header ('Content-type: application/octet-stream');
 		header ('Content-Disposition: attachment; filename="' . $filenameBase . '.csv"');
-		echo $csv;
+		echo $data;
 	}
 	
 	
