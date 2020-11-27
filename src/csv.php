@@ -1,6 +1,6 @@
 <?php
 
-# Version 1.3.13
+# Version 1.3.14
 
 # Load required libraries
 require_once ('application.php');
@@ -330,7 +330,7 @@ class csv
 	
 	
 	# Function to import a set of CSV files into a set of database tables
-	public static function filesToSql ($dataDirectory, $pattern /* e.g. ([a-z]{3})[0-9]{2}.csv - must have one capture, or just be a simple filename */, $fieldLabels = array (), $tableComment = '%s data', $prefix = '', $names = array (), &$errorsHtml = false, $highMemory = '500M')
+	public static function filesToSql ($dataDirectory, $pattern /* e.g. ([a-z]{3})[0-9]{2}.csv - must have one capture, or just be a simple filename */, $fieldLabels = array (), $tableComment = '%s data', $prefix = '', $names = array (), &$errorsHtml = false, $highMemory = '500M', $ignore1Lines = true)
 	{
 		# Enable high memory and prevent timeouts
 		if ($highMemory) {
@@ -519,7 +519,7 @@ class csv
 				ESCAPED BY '\"'
 				LINES TERMINATED BY '" . ($attributes['windowsLineEndings'] ? "\\r\\n" : "\\n") . "'
 				/* #!# Note this terrible MySQL bug which means the first line is skipped: http://bugs.mysql.com/bug.php?id=39247 */
-				IGNORE 1 LINES
+				" . ($ignore1Lines ? 'IGNORE 1 LINES' : '') . "
 				({$columns})
 				;";
 				//break 2;
@@ -535,6 +535,7 @@ class csv
 	public static function xls2csv ($xlsDirectory, $csvDirectory, $pearPath = '/usr/local/lib/php/')
 	{
 		# Load the PEAR library; the function requires PHPExcel which must be in the path. Install using: /usr/local/bin/pear channel-discover pear.pearplex.net ; /usr/local/bin/pear install pearplex/PHPExcel
+		#!# Needs to be migrated to PhpSpreadsheet, using enclosureRequired; see: https://github.com/PHPOffice/PhpSpreadsheet/blob/master/src/PhpSpreadsheet/Writer/Csv.php
 		if ($pearPath) {
 			set_include_path (get_include_path () . PATH_SEPARATOR . $pearPath);
 		}
@@ -569,6 +570,7 @@ class csv
 			$objReader = PHPExcel_IOFactory::createReader ($excelImplementation);
 			$objPHPExcel = $objReader->load ($xlsFile);
 			$objWriter = PHPExcel_IOFactory::createWriter ($objPHPExcel, 'CSV');
+			#!# This becomes enclosureRequired under PhpSpreadsheet
 			$objWriter->setEnclosureIsOptional (true);				// Requires the patch at https://github.com/PHPOffice/PHPExcel/issues/282
 			$objWriter->save ($csvFile);
 			$converted[$xlsDirectory . $file] = $csvFile;
