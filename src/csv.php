@@ -1,6 +1,6 @@
 <?php
 
-# Version 1.3.16
+# Version 1.4.0
 
 # Load required libraries
 require_once ('application.php');
@@ -500,18 +500,17 @@ class csv
 					$type = 'TEXT';
 					$length = false;
 				}
-				$collation = ($type == 'VARCHAR' ? ' COLLATE utf8_unicode_ci' : '');
 				$label = (($fieldLabels && is_array ($fieldLabels) && isSet ($fieldLabels[$table]) && isSet ($fieldLabels[$table][$fieldname])) ? $fieldLabels[$table][$fieldname] : false);
 				$labelEscaped = ($label ? " COMMENT '" . str_replace ("'", "''", $label) . "'" : '');
-				$fieldsSql[] = "`{$fieldname}` {$type}" . ($length ? "({$length})" : '') . $collation . $labelEscaped;
+				$fieldsSql[] = "`{$fieldname}` {$type}" . ($length ? "({$length})" : '') . $labelEscaped;
 			}
 			$fieldsSql[] = "PRIMARY KEY (id)";
 			$sql .= "\n\t" . implode (",\n\t", $fieldsSql);
-			$sql .= "\n" . ") ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='{$comment}';";
+			$sql .= "\n" . ") COMMENT='{$comment}';";
 		}
 		$sql .= "\n\n\n-- Data:\n\n";
 		
-		# Add statements for loading the data; see: http://dev.mysql.com/doc/refman/5.1/en/load-data.html
+		# Add statements for loading the data; see: https://dev.mysql.com/doc/refman/8.0/en/load-data.html
 		foreach ($groupings as $grouping => $files) {
 			$sql .= "\n\n" . "-- CSV {$names[$grouping]} data files:";
 			foreach ($files as $file => $attributes) {
@@ -525,7 +524,7 @@ class csv
 				ENCLOSED BY '\"'
 				ESCAPED BY '\"'
 				LINES TERMINATED BY '" . ($attributes['windowsLineEndings'] ? "\\r\\n" : "\\n") . "'
-				/* #!# Note this terrible MySQL bug which means the first line is skipped: http://bugs.mysql.com/bug.php?id=39247 */
+				/* #!# Note this terrible MySQL bug which means the first line is skipped: https://bugs.mysql.com/bug.php?id=39247 */
 				" . ($ignore1Lines ? 'IGNORE 1 LINES' : '') . "
 				({$columns})
 				;";
@@ -538,7 +537,7 @@ class csv
 	}
 	
 	
-	# Function to convert Excel files in a directory to CSV files; see: http://unix.stackexchange.com/a/30245 and http://stackoverflow.com/questions/3874840/csv-to-excel-conversion
+	# Function to convert Excel files in a directory to CSV files; see: https://unix.stackexchange.com/a/30245 and https://stackoverflow.com/questions/3874840/csv-to-excel-conversion
 	public static function xls2csv ($xlsDirectory, $csvDirectory, $pearPath = '/usr/local/lib/php/')
 	{
 		# Load the PEAR library; the function requires PHPExcel which must be in the path. Install using: /usr/local/bin/pear channel-discover pear.pearplex.net ; /usr/local/bin/pear install pearplex/PHPExcel
