@@ -1,6 +1,6 @@
 <?php
 
-# Version 1.4.0
+# Version 1.4.1
 
 # Load required libraries
 require_once ('application.php');
@@ -45,10 +45,14 @@ class csv
 		# Loop through each line of data
 		$data = array ();
 		$counter = 0;
+		$isHeader = true;	// First line will be header
 		while ($csvDataLine = fgetcsv ($fileHandle, $longestLineLength + 1)) {
 			
 			# Skip if in the first (header) row
-			if (!$counter++) {continue;}
+			if ($isHeader) {
+				$isHeader = false;
+				continue;
+			}
 			
 			# Skip comment lines, i.e. starting with #, if required
 			if ($skipCommentLines) {
@@ -65,15 +69,20 @@ class csv
 				$rowKey = $csvDataLine[0];
 				
 				if ($stripKey) {unset ($csvDataLine[0]);}
-				if ($hasNoKeys) {$rowKey = $counter - 1;}
+				if ($hasNoKeys) {$rowKey = $counter;}
 				
 				# Loop through each item of data
 				#!# What should happen if a row has fewer columns than another? If there are fields missing, then it may be better to allow offsets to be generated as otherwise the data error may not be known. Filling in the remaining fields is probably wrong as we don't know which are missing.
 				foreach ($csvDataLine as $key => $value) {
 					
 					# Assign the entry into the table
-					if (isSet ($headers[$key])) {$data[$rowKey][$headers[$key]] = $value;}
+					if (isSet ($headers[$key])) {
+						$data[$rowKey][$headers[$key]] = $value;
+					}
 				}
+				
+				# Advance the counter
+				$counter++;
 			}
 		}
 		
@@ -93,14 +102,17 @@ class csv
 		$fileHandle = fopen ($filename, 'rb');
 		
 		# Get the column names
-		$longestLineLength = 4096;	#!# Hard-coded
-		$headers = fgetcsv ($fileHandle, $longestLineLength);
+		$length = (version_compare (phpversion (), '8', '>=') ? NULL : 4096);
+		$headers = fgetcsv ($fileHandle, $length);
 		
 		# Close the file
 		fclose ($fileHandle);
 		
 		# If there are no headers, return false
 		if (!$headers) {return false;}
+		
+		# If the first header starts with a Unicode BOM, strip that
+		$headers[0] = str_replace ("\xEF\xBB\xBF",'', $headers[0]);
 		
 		# Return the headers
 		return $headers;
