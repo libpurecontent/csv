@@ -1,9 +1,8 @@
 <?php
 
-# Version 1.4.1
+#!# Should be passed upstream to calling application
+pureContent::cleanServerGlobals ();
 
-# Load required libraries
-require_once ('application.php');
 
 # Class for manipulation of CSV files
 class csv
@@ -357,9 +356,6 @@ class csv
 			ini_set ('memory_limit', $highMemory);
 		}
 		
-		# Load required libraries
-		require_once ('directories.php');
-		
 		# Get the list of files to import
 		$dataDirectory = $dataDirectory . (substr ($dataDirectory, -1) == '/' ? '' : '/');	// Ensure it is slash-terminated
 		if (!$csvFiles = directories::listFiles ($dataDirectory, array ('csv'), $directoryIsFromRoot = true)) {
@@ -550,15 +546,8 @@ class csv
 	
 	
 	# Function to convert Excel files in a directory to CSV files; see: https://unix.stackexchange.com/a/30245 and https://stackoverflow.com/questions/3874840/csv-to-excel-conversion
-	public static function xls2csv ($xlsDirectory, $csvDirectory, $pearPath = '/usr/local/lib/php/')
+	public static function xls2csv ($xlsDirectory, $csvDirectory)
 	{
-		# Load the PEAR library; the function requires PHPExcel which must be in the path. Install using: /usr/local/bin/pear channel-discover pear.pearplex.net ; /usr/local/bin/pear install pearplex/PHPExcel
-		#!# Needs to be migrated to PhpSpreadsheet, using enclosureRequired; see: https://github.com/PHPOffice/PhpSpreadsheet/blob/master/src/PhpSpreadsheet/Writer/Csv.php
-		if ($pearPath) {
-			set_include_path (get_include_path () . PATH_SEPARATOR . $pearPath);
-		}
-		require_once ('PHPExcel/PHPExcel/Classes/PHPExcel/IOFactory.php');
-		
 		# Ensure the input directory exists
 		if (!is_dir ($xlsDirectory)) {
 			return false;
@@ -572,13 +561,14 @@ class csv
 		}
 		
 		# Get a list of all the files
-		require_once ('directories.php');
 		$files = directories::listFiles ($xlsDirectory, array ('xls', 'xlsx'), $directoryIsFromRoot = true);
 		
 		# Give an explicit ordering
 		ksort ($files);
 		
 		# Do the file conversions
+		#!# Needs to be migrated to PhpSpreadsheet, using enclosureRequired; see: https://github.com/PHPOffice/PhpSpreadsheet/blob/master/src/PhpSpreadsheet/Writer/Csv.php
+		#!# Currently fails with: Fatal error: Array and string offset access syntax with curly braces is no longer supported in phpoffice/phpexcel/Classes/PHPExcel/Shared/String.php on line 529
 		$converted = array ();
 		foreach ($files as $file => $attributes) {
 			if (preg_match ('/^$/', $file)) {continue;}	// Skip shadow Excel files, which begin ~
