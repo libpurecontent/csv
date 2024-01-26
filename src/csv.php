@@ -1,9 +1,5 @@
 <?php
 
-#!# Should be passed upstream to calling application
-pureContent::cleanServerGlobals ();
-
-
 # Class for manipulation of CSV files
 class csv
 {
