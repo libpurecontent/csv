@@ -11,7 +11,7 @@
     ],
     "require": {
         "libpurecontent/application": "^1.9",
-        "libpurecontent/directories": "^1.3",
+        "libpurecontent/directories": "^1.4",
         "phpoffice/phpspreadsheet": "^4.2"
     },
     "autoload": {
