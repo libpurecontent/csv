@@ -562,20 +562,17 @@ class csv
 		# Give an explicit ordering
 		ksort ($files);
 		
-		# Do the file conversions
-		#!# Needs to be migrated to PhpSpreadsheet, using enclosureRequired; see: https://github.com/PHPOffice/PhpSpreadsheet/blob/master/src/PhpSpreadsheet/Writer/Csv.php
-		#!# Currently fails with: Fatal error: Array and string offset access syntax with curly braces is no longer supported in phpoffice/phpexcel/Classes/PHPExcel/Shared/String.php on line 529
+		# Do the file conversions, using PhpSpreadsheet; see: https://github.com/PHPOffice/PhpSpreadsheet/ and https://github.com/PHPOffice/PhpSpreadsheet/blob/master/src/PhpSpreadsheet/Writer/Csv.php
 		$converted = array ();
 		foreach ($files as $file => $attributes) {
 			if (preg_match ('/^$/', $file)) {continue;}	// Skip shadow Excel files, which begin ~
 			$xlsFile = $xlsDirectory . $file;
 			$csvFile = $csvDirectory . preg_replace ("/.{$attributes['extension']}$/", '.csv', $file);
-			$excelImplementation = ($attributes['extension'] == 'xls' ? 'Excel5' : 'Excel2007');
-			$objReader = PHPExcel_IOFactory::createReader ($excelImplementation);
+			$excelImplementation = ($attributes['extension'] == 'xls' ? 'Xls' : 'Xlsx');
+			$objReader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader ($excelImplementation);
 			$objPHPExcel = $objReader->load ($xlsFile);
-			$objWriter = PHPExcel_IOFactory::createWriter ($objPHPExcel, 'CSV');
-			#!# This becomes enclosureRequired under PhpSpreadsheet
-			$objWriter->setEnclosureIsOptional (true);				// Requires the patch at https://github.com/PHPOffice/PHPExcel/issues/282
+			$objWriter = \PhpOffice\PhpSpreadsheet\IOFactory::createWriter ($objPHPExcel, 'Csv');
+			$objWriter->setEnclosureRequired (false);
 			$objWriter->save ($csvFile);
 			$converted[$xlsDirectory . $file] = $csvFile;
 		}
