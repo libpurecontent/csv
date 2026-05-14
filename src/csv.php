@@ -563,6 +563,7 @@ class csv
 		ksort ($files);
 		
 		# Do the file conversions, using PhpSpreadsheet; see: https://github.com/PHPOffice/PhpSpreadsheet/ and https://github.com/PHPOffice/PhpSpreadsheet/blob/master/src/PhpSpreadsheet/Writer/Csv.php
+		#!# Not yet tested under 5.x, but upgraded in Composer.json to avoid blocking other dependencies
 		$converted = array ();
 		foreach ($files as $file => $attributes) {
 			if (preg_match ('/^$/', $file)) {continue;}	// Skip shadow Excel files, which begin ~
