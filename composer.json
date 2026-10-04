@@ -11,8 +11,10 @@
     ],
     "require": {
         "libpurecontent/application": "^1.9",
-        "libpurecontent/directories": "^1.4",
-        "phpoffice/phpspreadsheet": "^5.7"
+        "libpurecontent/directories": "^1.4"
+    },
+    "suggest": {
+        "phpoffice/phpspreadsheet": "Required if using xls2csv"
     },
     "autoload": {
         "psr-0": {"csv": "src/"}
