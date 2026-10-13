@@ -26,22 +26,11 @@ class csv
 		# Open the file
 		if (!$fileHandle = fopen ($filename, 'rb')) {return false;}
 		
-		# Determine the longest line length
-		$longestLineLength = 1000;
-		$array = file ($filename);
-		$count = count ($array);
-		for ($i = 0; $i < $count; $i++) {
-			if ($longestLineLength < strlen ($array[$i])) {
-				$longestLineLength = strlen ($array[$i]);
-			}
-		}
-		unset ($array);
-		
 		# Loop through each line of data
 		$data = array ();
 		$counter = 0;
 		$isHeader = true;	// First line will be header
-		while ($csvDataLine = fgetcsv ($fileHandle, $longestLineLength + 1, ',', '"', $escape = '')) {
+		while ($csvDataLine = fgetcsv ($fileHandle, NULL, ',', '"', $escape = '')) {
 			
 			# Skip if in the first (header) row
 			if ($isHeader) {
@@ -97,8 +86,7 @@ class csv
 		$fileHandle = fopen ($filename, 'rb');
 		
 		# Get the column names
-		$length = (version_compare (phpversion (), '8', '>=') ? NULL : 4096);
-		$headers = fgetcsv ($fileHandle, $length, ',', '"', $escape = '');
+		$headers = fgetcsv ($fileHandle, NULL, ',', '"', $escape = '');
 		
 		# Close the file
 		fclose ($fileHandle);
@@ -434,25 +422,10 @@ class csv
 				# Parse the CSV
 				if (!$fileHandle = fopen ($filename, 'rb')) {return false;}
 				
-				# Determine the longest line length
-				/*
-			# Removed as inefficient - reinstate if problems found
-				$longestLineLength = 1000;
-				$array = file ($filename);
-				$count = count ($array);
-				for ($i = 0; $i < $count; $i++) {
-					if ($longestLineLength < strlen ($array[$i])) {
-						$longestLineLength = strlen ($array[$i]);
-					}
-				}
-				unset ($array);
-				*/
-				$longestLineLength = 4096;
-				
 				# Loop through each line of data
 				$data = array ();
 				$counter = 0;
-				while ($csvData = fgetcsv ($fileHandle, $longestLineLength + 1, ',', '"', $escape = '')) {
+				while ($csvData = fgetcsv ($fileHandle, NULL, ',', '"', $escape = '')) {
 					
 					# Skip if in the first (header) row
 					if (!$counter++) {continue;}
