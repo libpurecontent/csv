@@ -41,7 +41,7 @@ class csv
 		$data = array ();
 		$counter = 0;
 		$isHeader = true;	// First line will be header
-		while ($csvDataLine = fgetcsv ($fileHandle, $longestLineLength + 1)) {
+		while ($csvDataLine = fgetcsv ($fileHandle, $longestLineLength + 1, ',', '"', $escape = '')) {
 			
 			# Skip if in the first (header) row
 			if ($isHeader) {
@@ -98,7 +98,7 @@ class csv
 		
 		# Get the column names
 		$length = (version_compare (phpversion (), '8', '>=') ? NULL : 4096);
-		$headers = fgetcsv ($fileHandle, $length);
+		$headers = fgetcsv ($fileHandle, $length, ',', '"', $escape = '');
 		
 		# Close the file
 		fclose ($fileHandle);
@@ -165,7 +165,7 @@ class csv
 	}
 	
 	
-	# Function to convert CSV string to an array - from www.php.net/manual/en/function.fgetcsv.php#50186
+	# Function to convert CSV string to an array - from https://www.php.net/fgetcsv#50186
 	public static function csvtoArray ($content, $delimiter = ',', $enclosure = '"', $optional = 1)
 	{
 		# Define a regexp
@@ -452,7 +452,7 @@ class csv
 				# Loop through each line of data
 				$data = array ();
 				$counter = 0;
-				while ($csvData = fgetcsv ($fileHandle, $longestLineLength + 1)) {
+				while ($csvData = fgetcsv ($fileHandle, $longestLineLength + 1, ',', '"', $escape = '')) {
 					
 					# Skip if in the first (header) row
 					if (!$counter++) {continue;}
